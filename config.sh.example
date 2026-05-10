@@ -1,0 +1,39 @@
+# This config file should be located in ~/.config/tty-theme/config.sh (or
+# wherever $XDG_CONFIG_HOME points).
+# The comments show the default values.
+
+# Whether to automatically load the last used profile. This is always disabled
+# for ssh and sudo.
+#TTY_THEME_AUTOLOAD=1
+
+# The profile to load/save. If empty, it is loaded in the the order $TERM,
+# ${TERM%%-*} ($TERM up until the first -), "default" and saved to "default".
+#TTY_THEME_PROFILE=""
+
+# Whether to automatically update the theme database. If set to 0, updating is
+# completely disabled. If set to 1, the update is only performed after a
+# certain time (see $TTY_THEME_UPDATE_INTERVAL). If set to 2, the update is
+# always performed if the ETag and Last-Modified headers change and if set to
+# to 3, the update is performed unconditionally.
+# Note that providing a custom ~/.config/tty-theme/themes.csv also disables
+# updating the online database.
+#TTY_THEME_UPDATE=1
+
+# The update interval. Passed to touch -d "-$TTY_THEME_UPDATE_INTERVAL". Check
+# the touch man page for supported formats.
+#TTY_THEME_UPDATE_INTERVAL="1 week"
+
+# URL to download the theme database from.
+#TTY_THEME_URL="https://raw.githubusercontent.com/Gogh-Co/Gogh/master/data/themes.csv"
+
+# The ordered header names for the database. This is used to bring the fields
+# into the correct order and has to be name, color 1-16 and optionally
+# foreground background and cursor. This should only be relevant when using a
+# different database.
+#TTY_THEME_HEADERS="name$(printf ' color_%02d' {1..16}) foreground background cursor"
+
+# Whether to generate the 256 color table from the 8 base colors.
+#TTY_THEME_COLOR256=1
+
+# Whether the 256 color database should always be harmonious.
+#TTY_THEME_COLOR256_HARMONIOUS=0
