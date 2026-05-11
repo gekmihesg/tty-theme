@@ -9,6 +9,8 @@ should work on most modern terminal emulators.
 Source `tty-theme.bash` in your `.bashrc`, type `tty-theme <TAB>` and select
 a theme.
 
+https://github.com/user-attachments/assets/eda2cfe8-7354-4a03-bdb5-c73d97a248ed
+
 ## Requirements
 
 The only definite requirement is `bash`.
