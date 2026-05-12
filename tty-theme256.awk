@@ -21,9 +21,9 @@ function hex_to_num(hex,   c, i, n) {
 
 function hex_to_rgb(hex, rgb,   n) {
     n = hex_to_num(hex)
-    rgb[0] = int(n / 2**16) % 2**8
-    rgb[1] = int(n / 2**8) % 2**8
-    rgb[2] = int(n) % 2**8
+    rgb[0] = int(n / 2^16) % 2^8
+    rgb[1] = int(n / 2^8) % 2^8
+    rgb[2] = int(n) % 2^8
 }
 
 function rgb_to_lab(rgb, lab,   a, b, c, i) {
@@ -31,7 +31,7 @@ function rgb_to_lab(rgb, lab,   a, b, c, i) {
 
     for (i in a) {
         c = a[i] / 255
-        a[i] = (c <= 0.04045) ? (c / 12.92) : (((c + 0.055) / 1.055) ** 2.4)
+        a[i] = (c <= 0.04045) ? (c / 12.92) : (((c + 0.055) / 1.055) ^ 2.4)
     }
 
     b[0] = (a[0] * 0.4124 + a[1] * 0.3576 + a[2] * 0.1805) / 0.95047
@@ -39,7 +39,7 @@ function rgb_to_lab(rgb, lab,   a, b, c, i) {
     b[2] = (a[0] * 0.0193 + a[1] * 0.1192 + a[2] * 0.9505) / 1.08883
 
     for (i in b) {
-        a[i] = b[i] > 0.008856  ?  b[i] ** (1 / 3)  :  7.787 * b[i] + 16 / 116
+        a[i] = b[i] > 0.008856  ?  b[i] ^ (1 / 3)  :  7.787 * b[i] + 16 / 116
     }
 
     lab[0] = 116 * a[1] - 16
@@ -53,7 +53,7 @@ function lab_to_rgb(lab, rgb,   a, b, c, i) {
     a[2] = a[1] - lab[2] / 200
 
     for (i in a) {
-        b[i] = a[i]**3 > 0.008856 ? a[i]**3 : (a[i] - 16/116) / 7.787
+        b[i] = a[i]^3 > 0.008856 ? a[i]^3 : (a[i] - 16/116) / 7.787
     }
     b[0] *= 0.95047; b[1] *= 1.0; b[2] *= 1.08883
 
@@ -63,7 +63,7 @@ function lab_to_rgb(lab, rgb,   a, b, c, i) {
 
     for (i in a) {
         c = a[i]
-        c = c <= 0.0031308 ? 12.92 * c : 1.055 * c**(1/2.4) - 0.055
+        c = c <= 0.0031308 ? 12.92 * c : 1.055 * c^(1/2.4) - 0.055
         c = int(c * 255 + 0.5)
         rgb[i] = c < 0 ? 0 : c > 255 ? 255 : c
     }
