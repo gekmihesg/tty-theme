@@ -11,6 +11,14 @@ a theme.
 
 https://github.com/user-attachments/assets/eda2cfe8-7354-4a03-bdb5-c73d97a248ed
 
+## Other shells than `bash`
+
+There is a wrapper script `tty-theme` for integration with other shells. It
+should be sufficient to link it into `$PATH` and put something like
+`eval "$(tty-theme --autoload)"` into the startup configuration.
+For theme selection, just run `tty-theme` (or `eval "$(tty-theme)" to update
+the environment).
+
 ## Requirements
 
 The only definite requirement is `bash`.

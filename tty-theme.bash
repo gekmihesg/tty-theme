@@ -318,6 +318,7 @@ fi
 
 # shellcheck disable=SC1091
 [[ ! -f "${XDG_CONFIG_HOME:-"$HOME/.config"}/tty-theme/config.sh" ]] ||
+    (( ! ${_TTY_THEME_LOAD_CONFIG:-1} )) ||
     . "${XDG_CONFIG_HOME:-"$HOME/.config"}/tty-theme/config.sh"
 
 (( ! ${TTY_THEME_AUTOLOAD:-1} )) ||

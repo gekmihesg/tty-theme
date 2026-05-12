@@ -1,0 +1,47 @@
+#!/bin/bash
+# shellcheck disable=SC1090,SC1091
+
+# load config and disable it for the library to prevent autoloading when it is
+# explicitly enabled in the config
+[[ ! -f "${XDG_CONFIG_HOME:-"$HOME/.config"}/tty-theme/config.sh" ]] ||
+    . "${XDG_CONFIG_HOME:-"$HOME/.config"}/tty-theme/config.sh"
+
+set -euo pipefail
+
+lib="$(readlink -f "${BASH_SOURCE[0]}.bash")" && [[ -f "$lib" ]] || exit 1
+
+# if stdout is not a tty, keep those variables for comparision and generate
+# export instructions in the end if they changed in case this script was called
+# with something like `eval "$(tty-theme --autoload)"`
+declare -A export_vars=()
+if [[ ! -t 1 ]]; then
+    for var in TTY_THEME{,_COLORS}; do
+        export_vars["$var"]="${!var:-}"
+    done
+fi
+
+usage() {
+    printf 'usage: %s [' "$0"
+    printf -- '--%s, ' autoload list preview restore apply
+    printf -- '--help] ...\n'
+    exit "${1:-0}"
+}
+
+cmd="${1:-}"
+(( ! $# )) || shift
+case "$cmd" in
+    --autoload) _TTY_THEME_LOAD_CONFIG=0 . "$lib";;
+    *) TTY_THEME_AUTOLOAD=0 _TTY_THEME_LOAD_CONFIG=0 . "$lib";;&
+    --list | --preview | --restore) "_tty_theme_${cmd#--}" "$@";;
+    --apply) _tty_theme "${@:2}";;
+    --help) usage;;
+    --*) usage 2;;
+    *) _tty_theme "$@";;
+esac
+ec="$#"; (( ! ec )) || exit "$ec"
+
+# print export commands for changed variables
+for var in "${!export_vars[@]}"; do
+    [[ "${!var:-}" == "${export_vars["$var"]}" ]] ||
+        printf 'export %s=%q\n' "$var" "${!var}"
+done
