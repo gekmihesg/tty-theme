@@ -2,8 +2,10 @@
 # Translated from
 #  https://github.com/jake-stewart/color256/blob/49ffa647eb71d4510a8c2876c74cd5ae48566c9b/color256.py
 #
-# Expects 16 colors on the first input line, optionally followed by foreground
-# and background color. Further fields or lines are ignored.
+# Expects 8 or 16 colors as input, optionally followed by foreground and
+# background color. Further fields or lines are ignored. If more than 8 and less
+# than 16 colors are given, the bright colors will be set identical to the
+# normal ones.
 # Variables pattern and harmonious can be passed to overwrite the default.
 # The pattern must pick up index, red, green and blue.
 #
@@ -73,15 +75,37 @@ function lerp_lab(t, lab1, lab2, lab,   i) {
     }
 }
 
-NF >= 16 {
-    for (i = 1; i <= 18 && i <= NF; i++) {
-        $i = tolower($i)
-        sub(/^(0x|#)/, "", $i)
-        if ($i !~ /^[0-9a-f]+$/) exit 1
+BEGIN {
+    idx = 0
+    error = 0
+}
+
+{
+    for (i = 1; i <= NF; i++) {
+        field = tolower($i)
+        sub(/^(0x|#)/, "", field)
+        if (field !~ /^[0-9a-f]+$/) {
+            error = 1
+            exit
+        }
+        color[idx++] = field
+        if (idx >= 18) exit
+    }
+}
+
+END {
+    if (idx < 8) error = 2
+    if (error) exit error
+
+    if (idx < 16) {
+        for (i = idx - 1; i >= 0; i--) {
+            color[i + 8] = color[i]
+            idx++
+        }
     }
 
-    fg = NF >= 17 ? $17 : $8
-    bg = NF >= 18 ? $18 : $1
+    fg = idx >= 16 ? color[16] : color[7]
+    bg = idx >= 17 ? color[17] : color[0]
 
     is_light_theme = hex_to_num(fg) < hex_to_num(bg)
     invert = is_light_theme && !harmonious
@@ -91,12 +115,12 @@ NF >= 16 {
     }
 
     rgb_to_lab(invert ? fg : bg, base8_lab0)
-    rgb_to_lab($2, base8_lab1)
-    rgb_to_lab($3, base8_lab2)
-    rgb_to_lab($4, base8_lab3)
-    rgb_to_lab($5, base8_lab4)
-    rgb_to_lab($6, base8_lab5)
-    rgb_to_lab($7, base8_lab6)
+    rgb_to_lab(color[1], base8_lab1)
+    rgb_to_lab(color[2], base8_lab2)
+    rgb_to_lab(color[3], base8_lab3)
+    rgb_to_lab(color[4], base8_lab4)
+    rgb_to_lab(color[5], base8_lab5)
+    rgb_to_lab(color[6], base8_lab6)
     rgb_to_lab(invert ? bg : fg, base8_lab7)
 
     idx = 0
@@ -124,8 +148,4 @@ NF >= 16 {
         lab_to_rgb(c, rgb)
         printf(pattern, idx++, rgb[0], rgb[1], rgb[2])
     }
-
-    exit 0
 }
-
-{ exit 1 }
