@@ -4,7 +4,10 @@
 _tty_theme() {
     local theme="$*"
     local colors
-    colors="$(_tty_theme_get "$theme")" || return 1
+    if [[ -z "$theme" ]] || ! colors="$(_tty_theme_get "$theme")"; then
+        theme="$(_tty_theme_fzf fzf --query="$theme")" || return 1
+        colors="$(_tty_theme_get "$theme")" || return 1
+    fi
     read -ra colors <<<"$colors"
     _tty_theme_apply "${colors[@]}" || return 1
     export TTY_THEME="$theme"
@@ -268,6 +271,19 @@ _tty_theme_restore() {
     return "$ec"
 }
 
+# fzf wrapper to be used by theme selector and bash completion
+_tty_theme_fzf() {
+    local fzf="${1:-fzf}" fzf_args=("${@:2}")
+    command -v "$fzf" >/dev/null || return 1
+    TTY_THEME_UPDATE=0 SHELL="$BASH" \
+        "$fzf" --reverse \
+            --preview="$(printf '. %q && _tty_theme_preview {}' \
+                "${BASH_SOURCE[0]}")" \
+            --preview-window='75%,right,noinfo,<68(bottom,9)' \
+            --bind=resize:refresh-preview \
+            "${fzf_args[@]}" < <(_tty_theme_list | sort)
+}
+
 if [[ -n "${PS1:-}" ]]; then
     alias tty-theme=_tty_theme
     alias tty-theme-preview=_tty_theme_preview
@@ -288,13 +304,7 @@ if [[ -n "${PS1:-}" ]]; then
                 # shellcheck disable=SC2162
                 read cur <<<"${COMP_WORDS[COMP_CWORD]}"
                 COMP_WORDS[COMP_CWORD]="${cur//[\"\']/}"
-                FZF_COMPLETION_TRIGGER='' TTY_THEME_UPDATE=0 \
-                    _fzf_complete \
-                    --preview="$(printf '. %q && _tty_theme_preview {}' \
-                        "${BASH_SOURCE[0]}")" \
-                    --preview-window='right,noinfo,<68(bottom,9)' \
-                    --bind=resize:refresh-preview \
-                    -- "$@" < <(_tty_theme_list | sort)
+                FZF_COMPLETION_TRIGGER='' _tty_theme_fzf _fzf_complete -- "$@"
             }
             _fzf_orig_completion_tty_theme=_comp_tty_theme
             complete -F _fzf_tty_theme_completion \
