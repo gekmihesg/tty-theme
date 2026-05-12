@@ -49,6 +49,7 @@ _tty_theme_apply() {
         screen) printf $'\eP%s\e\\' "${sequence[@]}";;
         *) printf %s "${sequence[@]}";;
     esac
+    export TTY_THEME_COLORS="${colors[*]}"
 }
 
 # generate control sequences for the 256 color palette
@@ -240,9 +241,37 @@ _tty_theme_preview() {
     done
 }
 
+# restores the current theme, optionally runs the passed command first
+# shellcheck disable=SC2120
+_tty_theme_restore() {
+    local cmd=("$@") ec=0
+    (( !${#cmd[@]} )) || "${cmd[@]}"; ec=$?
+    if [[ -n "${TTY_THEME:-}" && -n "${TTY_THEME_COLORS:-}" ]]; then
+        local colors
+        read -ra colors <<<"$TTY_THEME_COLORS"
+        _tty_theme_apply "${colors[@]}"
+    else
+        local config="${XDG_CONFIG_HOME:-"$HOME/.config"}/tty-theme"
+        local profiles="${TTY_THEME_PROFILE:-"$TERM ${TERM%%-*} default"}"
+        local theme
+        read -ra profiles <<<"$profiles"
+        for theme in "${profiles[@]}"; do
+            printf -v theme '%s/%s.theme' "$config" "$theme"
+            if [[ -f "$theme" ]]; then
+                IFS=',' read -ra theme <"$theme"
+                ! _tty_theme_apply "${theme[@]:1:20}" ||
+                    export TTY_THEME="${theme[0]:-unknown}"
+                break
+            fi
+        done
+    fi
+    return "$ec"
+}
+
 if [[ -n "${PS1:-}" ]]; then
     alias tty-theme=_tty_theme
     alias tty-theme-preview=_tty_theme_preview
+    alias reset='_tty_theme_restore reset'
 
     if [[ -v BASH_COMPLETION_VERSINFO ]]; then
         _comp_tty_theme() {
@@ -277,24 +306,10 @@ if [[ -n "${PS1:-}" ]]; then
     fi
 fi
 
-config="${XDG_CONFIG_HOME:-"$HOME/.config"}/tty-theme"
 # shellcheck disable=SC1091
-[[ ! -f "$config/config.sh" ]] || . "$config/config.sh"
+[[ ! -f "${XDG_CONFIG_HOME:-"$HOME/.config"}/tty-theme/config.sh" ]] ||
+    . "${XDG_CONFIG_HOME:-"$HOME/.config"}/tty-theme/config.sh"
 
-if (( ${TTY_THEME_AUTOLOAD:-1} )) &&
-        [[ -z "${TTY_THEME:-}${SUDO_TTY:-}${SSH_TTY:-}" ]]; then
-    profiles="${TTY_THEME_PROFILE:-"$TERM ${TERM%%-*} default"}"
-    read -ra profiles <<<"$profiles"
-    for theme in "${profiles[@]}"; do
-        printf -v theme '%s/%s.theme' "$config" "$theme"
-        if [[ -f "$theme" ]]; then
-            IFS=',' read -ra theme <"$theme"
-            ! _tty_theme_apply "${theme[@]:1:20}" ||
-                export TTY_THEME="${theme[0]:-unknown}"
-            break
-        fi
-    done
-    unset profiles theme
-fi
-
-unset config
+(( ! ${TTY_THEME_AUTOLOAD:-1} )) ||
+    [[ -n "${TTY_THEME:-}${SUDO_TTY:-}${SSH_TTY:-}" ]] ||
+    _tty_theme_restore

@@ -43,7 +43,8 @@ main script is sourced, this is automatically applied by default, unless a
 preferred `$TERM.theme` or `${TERM%%-*}.theme` exists. This feature does not
 require the database, all colors are stored within the theme.
 The theme is _not_ auto loaded if `$SSH_TTY` or `$SUDO_TTY` is are set.
-The name of the current theme is stored in `$TTY_THEME`.
+The name of the current theme is stored in `$TTY_THEME` and the colors are in
+`$TTY_THEME_COLORS`.
 
 If a command or function `_tty_theme_post` is defined, it gets executed after
 applying the theme and before saving it. It gets the theme colors as parameters.
