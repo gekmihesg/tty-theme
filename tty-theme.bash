@@ -31,7 +31,7 @@ _tty_theme() {
 # generate and print control sequences
 _tty_theme_apply() {
     local colors=("$@")
-    (( 16 <= ${#colors[@]} <= 19 )) || return 1
+    (( ${#colors[@]} >= 16 && ${#colors[@]} <= 19 )) || return 1
     local fg="${colors[16]:-"${colors[7]}"}"
     local bg="${colors[17]:-"${colors[0]}"}"
     local cur="${colors[18]:-"$fg"}"
@@ -60,7 +60,7 @@ _tty_theme_color256() {
     local pattern="$1" colors=("${@:2}")
     (( ${TTY_THEME_COLOR256:-1} )) || return 1
     local script
-    script="$(readlink -f "${BASH_SOURCE[0]}")" &&
+    script="$(realpath "${BASH_SOURCE[0]}")" &&
         awk -f "${script%.*}256.awk" \
             -v harmonious="${TTY_THEME_COLOR256_HARMONIOUS:-0}" \
             -v pattern="$pattern" <<<"${colors[*]}"
@@ -73,25 +73,24 @@ _tty_theme_update() {
     local order="${TTY_THEME_HEADERS:-"name$(
         printf ' color_%02d' {1..16}) foreground background cursor"}"
     local update="${TTY_THEME_UPDATE:-1}"
-    local max_age="-${TTY_THEME_UPDATE_INTERVAL:-1 week}"
-    local curl tmp ec=0
+    local max_age="${TTY_THEME_UPDATE_INTERVAL:-7}"
+    local ec=0
 
     [[ -n "$file" ]] || return 1
-
     # return if update is disabled
     (( update > 0 )) || return 0
 
-    # create temp file
-    [[ "$file" != */* ]] || [[ -d "${file%/*}" ]] ||
-        mkdir -p -- "${file%/*}" || return 1
-    tmp="$(mktemp "$file.XXXXXX")" || return 1
-
     # continue if database is older than max_age
-    if (( update >= 2 )) ||
-            touch -d "$max_age" "$tmp" &&
-            [[ "$tmp" -nt "$file" ]]; then
-        curl=(-SsLm10 --etag-save "$tmp.etag" -o "$tmp")
+    if (( update >= 2 )) || [[ ! -f "$file" ]] ||
+            [[ -n "$(find "$file" -mtime "+$max_age")" ]]; then
+        local curl tmp
 
+        # create temp file
+        [[ "$file" != */* ]] || [[ -d "${file%/*}" ]] ||
+            mkdir -p -- "${file%/*}" || return 1
+        tmp="$(mktemp "$file.XXXXXX")" || return 1
+
+        curl=(-SsLm10 --etag-save "$tmp.etag" -o "$tmp")
         # make curl check against stored timestamp and etag
         if (( update < 3 )); then
             [[ ! -f "$file" ]] || curl+=(--time-cond "$file")
@@ -131,8 +130,8 @@ _tty_theme_update() {
         else
             rm -f -- "$tmp.etag"
         fi
+        rm -f -- "$tmp"
     fi
-    rm -f -- "$tmp"
     return "$ec"
 }
 

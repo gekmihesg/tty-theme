@@ -19,9 +19,8 @@
 # updating the online database.
 #TTY_THEME_UPDATE=1
 
-# The update interval. Passed to touch -d "-$TTY_THEME_UPDATE_INTERVAL". Check
-# the touch man page for supported formats.
-#TTY_THEME_UPDATE_INTERVAL="1 week"
+# The update interval in days.
+#TTY_THEME_UPDATE_INTERVAL="7"
 
 # URL to download the theme database from.
 #TTY_THEME_URL="https://raw.githubusercontent.com/Gogh-Co/Gogh/master/data/themes.csv"

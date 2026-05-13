@@ -8,7 +8,7 @@
 
 set -euo pipefail
 
-lib="$(readlink -f "${BASH_SOURCE[0]}.bash")" && [[ -f "$lib" ]] || exit 1
+lib="$(realpath "${BASH_SOURCE[0]}").bash" && [[ -f "$lib" ]] || exit 1
 
 # if stdout is not a tty, keep those variables for comparision and generate
 # export instructions in the end if they changed in case this script was called
