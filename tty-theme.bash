@@ -138,7 +138,7 @@ _tty_theme_update() {
 
 # output the theme database, optinally trigger update
 _tty_theme_data() {
-    local config="${XDG_CACHE_HOME:-"$HOME/.config"}/tty-theme"
+    local config="${XDG_CONFIG_HOME:-"$HOME/.config"}/tty-theme"
     local cache="${XDG_CACHE_HOME:-"$HOME/.cache"}/tty-theme"
     local file="$config/themes.csv"
 

@@ -125,7 +125,7 @@ END {
 
     idx = 0
     for (i = 0; i < 16; i++) {
-        hex_to_rgb($(i+1), rgb)
+        hex_to_rgb(color[i], rgb)
         printf(pattern, idx++, rgb[0], rgb[1], rgb[2])
     }
     for (r = 0; r < 6; r++) {
