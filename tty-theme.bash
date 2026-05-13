@@ -324,13 +324,15 @@ _tty_theme_restore() {
 _tty_theme_fzf() {
     local fzf="${1:-fzf}" fzf_args=("${@:2}")
     command -v "$fzf" >/dev/null || return 1
+    local cmd="$(printf '. %q &&' "${BASH_SOURCE[0]}")"
     SHELL="$BASH" \
+        _TTY_THEME_LOAD_CONFIG=0 \
+        TTY_THEME_AUTOLOAD=0 \
         TTY_THEME_COLOR256="${TTY_THEME_COLOR256:-}" \
         TTY_THEME_COLOR256_HARMONIOUS="${TTY_THEME_COLOR256_HARMONIOUS:-}" \
         TTY_THEME_UPDATE=0 \
         "$fzf" --reverse \
-            --preview="$(printf '. %q && _tty_theme_preview {}' \
-                "${BASH_SOURCE[0]}")" \
+            --preview="$cmd _tty_theme_preview {}" \
             --preview-window='75%,right,noinfo,<68(67%,bottom)' \
             --bind=resize:refresh-preview \
             "${fzf_args[@]}" < <(_tty_theme_list | sort)
@@ -369,8 +371,8 @@ if [[ -n "${PS1:-}" ]]; then
 fi
 
 # shellcheck disable=SC1091
-[[ ! -f "${XDG_CONFIG_HOME:-"$HOME/.config"}/tty-theme/config.sh" ]] ||
-    (( ! ${_TTY_THEME_LOAD_CONFIG:-1} )) ||
+(( ! ${_TTY_THEME_LOAD_CONFIG:-1} )) ||
+    [[ ! -f "${XDG_CONFIG_HOME:-"$HOME/.config"}/tty-theme/config.sh" ]] ||
     . "${XDG_CONFIG_HOME:-"$HOME/.config"}/tty-theme/config.sh"
 
 (( ! ${TTY_THEME_AUTOLOAD:-1} )) ||
