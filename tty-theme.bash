@@ -195,52 +195,101 @@ _tty_theme_format() {
 _tty_theme_preview() {
     local theme="$*"
 
-    local colors fg bg cur
+    local colors
     colors="$(_tty_theme_get "$theme")" || return 1
     read -ra colors <<<"$colors"
-    mapfile -t colors < <(_tty_theme_format -1 '%d;%d;%d\n' "${colors[@]}")
-    fg="${colors[16]:-"${colors[7]}"}" bg="${colors[17]:-"${colors[0]}"}"
-    cur="${colors[18]:-"$fg"}" colors=("${colors[@]:0:16}")
 
-    local color inv i
-    # line start, line end
-    local ls le=$'\e[0m\n'
-    # block width, block count, space before, row count
-    local bw=8 bc=8 sp=0 r=0 i
-    local tw="${FZF_PREVIEW_COLUMNS:-${COLUMNS:-64}}"
+    local colors16 fg bg cur
+    mapfile -t colors16 < <(_tty_theme_format -1 '%d;%d;%d\n' "${colors[@]}")
+    fg="${colors16[16]:-"${colors16[7]}"}"
+    bg="${colors16[17]:-"${colors16[0]}"}"
+    cur="${colors16[18]:-"$fg"}"
+
+    local colors256
+    mapfile -t colors256 < <(_tty_theme_color256 '%d:%d;%d;%d\n' "${colors[@]}")
+    colors256=("${colors256[@]#*:}")
+
+    local tw="${FZF_PREVIEW_COLUMNS:-"${COLUMNS:-0}"}"
     local th="${FZF_PREVIEW_LINES:-0}"
+    (( tw )) || tw="$(tput cols)" || tw=64
 
-    # blocks per line, min 1, max 8
-    bc=$(( bc=(tw / bw), bc < 1 ? 1 : (bc > 8 ? 8 : bc) ))
-    sp=$(((tw - bc * bw) / 2))
+    local ls le=$'\e[0m\n' spacer
     ls="$(printf '\e[0;38;2;%s;48;2;%sm' "$fg" "$bg")"
-    theme="${theme##*/}" && theme="${theme%.*}" && theme="${theme:0:tw}"
+    spacer="$(printf '%s%*s%s' "$ls" "$tw" '' "$le")"
 
-    printf '%s%*s%s' "$ls" "$tw" '' "$le" && (( ++r ))
-    # center theme name followed by cursor
-    printf '%s\e[1m%*s\e[5;38;2;%sm█%s%*s%s' \
-        "$ls" $((tw / 2 + ${#theme} / 2)) "$theme" "$cur" "$ls" \
-        $((tw / 2 - ${#theme} / 2 - 1 + tw % 2)) '' "$le" && (( ++r ))
-    printf '%s%*s%s' "$ls" "$tw" '' "$le" && (( ++r ))
-    # print blocks
-    for inv in 0 1; do
-        i=0
-        while (( i < ${#colors[@]} )); do
-            printf '%s%*s' "$ls" "$sp" ''
-            (( !inv )) || printf '\e[7m'
-            for color in "${colors[@]:(i/bc)*bc:bc}"; do
-                # shellcheck disable=SC2086
-                printf '\e[38;2;%sm %02x%02x%02x ' "$color" ${color//\;/ }
-                ((++i % bc)) || break
+    local line lines=0
+    while IFS='' read -r line; do
+        echo "$line" && (( ++lines ))
+    done < <(
+        print_block() {
+            local bw="$1" bcs="$2" callback="$3" colors=("${@:4}")
+            local bc bn idx=0
+
+            # find the highest block count that fits into the terminal
+            IFS=, read -ra bcs <<<"$bcs"
+            for bc in "${bcs[@]}"; do
+                (( bc * bw > tw )) || break
             done
-            printf '%s%*s%s' "$ls" \
-                $((tw - sp - bw * ((i - 1) % bc + 1))) '' "$le" && (( ++r ))
-        done
-        printf '%s%*s%s' "$ls" "$tw" '' "$le" && (( ++r ))
-    done
+
+            # cancel preview if there is not enough space left
+            if (( th > 0 && lines + ${#colors[@]} / bc + 1 > th )); then
+                print_space
+                exit 0
+            fi
+
+            local sp=$(((tw - bc * bw) / 2))
+            while (( idx < ${#colors[@]} )); do
+                printf '%s%*s' "$ls" "$sp" ''
+                for (( bn = 0; bn < bc; bn++ )); do
+                    "${callback}" "${colors[idx]}" $((idx++)) "$bw"
+                done
+                printf '%s%*s%s' "$ls" $((tw - sp - bw * bn)) '' "$le" &&
+                    (( ++ lines ))
+            done
+        }
+        # shellcheck disable=SC2329,SC2086
+        print_fg() { printf '\e[1;38;2;%sm %02x%02x%02x ' "$1" ${1//\;/ }; }
+        # shellcheck disable=SC2329
+        print_bg() { printf '\e[48;2;%sm%*s' "$1" "$3" ''; }
+        print_space() { echo "$spacer" && (( ++ lines )) }
+
+        print_space
+        # center theme name followed by cursor
+        (( ${#theme} < tw )) || theme="${theme:0:tw-4}..."
+        printf '%s\e[1m%*s\e[5;38;2;%sm█%s%*s%s' \
+            "$ls" $((tw / 2 + ${#theme} / 2)) "$theme" "$cur" "$ls" \
+            $((tw / 2 - ${#theme} / 2 - 1 + tw % 2)) '' "$le" && (( ++ lines ))
+        print_space
+
+        print_block 8 8,4,2,1 print_fg "${colors16[@]:0:16}"
+        print_space
+        print_block 6 8,4,2,1 print_bg "${colors16[@]:0:16}"
+
+        if (( ${#colors256[@]} )); then
+            print_block 2 24,12,6,3 print_bg "${colors256[@]:232:24}"
+
+            # sort palette into 6x6 blocks
+            local colors216=() idx=0 bw=2 bn=0 bc
+            for bc in 36 18 12 6; do
+                (( tw < bc * bw )) || break
+            done
+            print_space
+            while (( idx < 216 )); do
+                colors216+=("${colors256[16+(idx++)]}")
+                if (( ++bn == bc )); then
+                    (( bn = 0, !(idx % 36) || (idx -= (bc / 6 - 1) * 36) ))
+                else
+                    (( idx % 6 || (idx += 30) ))
+                fi
+            done
+            print_block "$bw" "$bc" print_bg "${colors216[@]}"
+        fi
+        print_space
+    )
+
     # fill till bottom, fzf only, see $th
-    while (( r < th )); do
-        printf '%s%*s%s' "$ls" "$tw" '' "$le" && (( ++r ))
+    while (( lines++ < th )); do
+        echo "$spacer"
     done
 }
 
@@ -275,11 +324,14 @@ _tty_theme_restore() {
 _tty_theme_fzf() {
     local fzf="${1:-fzf}" fzf_args=("${@:2}")
     command -v "$fzf" >/dev/null || return 1
-    TTY_THEME_UPDATE=0 SHELL="$BASH" \
+    SHELL="$BASH" \
+        TTY_THEME_COLOR256="${TTY_THEME_COLOR256:-}" \
+        TTY_THEME_COLOR256_HARMONIOUS="${TTY_THEME_COLOR256_HARMONIOUS:-}" \
+        TTY_THEME_UPDATE=0 \
         "$fzf" --reverse \
             --preview="$(printf '. %q && _tty_theme_preview {}' \
                 "${BASH_SOURCE[0]}")" \
-            --preview-window='75%,right,noinfo,<68(bottom,9)' \
+            --preview-window='75%,right,noinfo,<68(67%,bottom)' \
             --bind=resize:refresh-preview \
             "${fzf_args[@]}" < <(_tty_theme_list | sort)
 }
