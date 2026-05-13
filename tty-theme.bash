@@ -86,7 +86,7 @@ _tty_theme_update() {
         mkdir -p -- "${file%/*}" || return 1
     tmp="$(mktemp "$file.XXXXXX")" || return 1
 
-    # update continue if database is older than max_age
+    # continue if database is older than max_age
     if (( update >= 2 )) ||
             touch -d "$max_age" "$tmp" &&
             [[ "$tmp" -nt "$file" ]]; then
@@ -136,7 +136,7 @@ _tty_theme_update() {
     return "$ec"
 }
 
-# output the theme database, optinally trigger update
+# output the theme database, optionally trigger update
 _tty_theme_data() {
     local config="${XDG_CONFIG_HOME:-"$HOME/.config"}/tty-theme"
     local cache="${XDG_CACHE_HOME:-"$HOME/.cache"}/tty-theme"
