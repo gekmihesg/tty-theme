@@ -323,7 +323,8 @@ _tty_theme_restore() {
 _tty_theme_fzf() {
     local fzf="${1:-fzf}" fzf_args=("${@:2}")
     command -v "$fzf" >/dev/null || return 1
-    local cmd="$(printf '. %q &&' "${BASH_SOURCE[0]}")"
+    local cmd
+    cmd="$(printf '. %q &&' "${BASH_SOURCE[0]}")"
     SHELL="$BASH" \
         _TTY_THEME_LOAD_CONFIG=0 \
         TTY_THEME_AUTOLOAD=0 \
