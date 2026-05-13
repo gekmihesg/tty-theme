@@ -37,7 +37,7 @@ case "$cmd" in
     --*) usage 2;;
     *) _tty_theme "$@";;
 esac
-ec="$#"; (( ! ec )) || exit "$ec"
+ec="$?"; (( ! ec )) || exit "$ec"
 
 # print export commands for changed variables
 for var in "${!export_vars[@]}"; do
