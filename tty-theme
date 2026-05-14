@@ -23,7 +23,7 @@ fi
 usage() {
     printf 'usage: %s [' "$0"
     printf -- '--%s, ' autoload list preview restore apply
-    printf -- '--help] ...\n'
+    printf -- '--help] [...]\n'
     exit "${1:-0}"
 }
 
