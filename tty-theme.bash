@@ -90,28 +90,38 @@ _tty_theme_update() {
             mkdir -p -- "${file%/*}" || return 1
         tmp="$(mktemp "$file.XXXXXX")" || return 1
 
-        curl=(-SsLm10 --etag-save "$tmp.etag" -o "$tmp")
-        # make curl check against stored timestamp and etag
-        if (( update < 3 )); then
-            [[ ! -f "$file" ]] || curl+=(--time-cond "$file")
+        curl=(-fSsLm10 --etag-save "$tmp.etag" -o "$tmp")
+        if (( update < 3 )) && [[ -f "$file" ]]; then
+            # make curl check against file timestamp and etag
+            curl+=(--time-cond "$file")
             [[ ! -f "$file.etag" ]] || curl+=(--etag-compare "$file.etag")
         fi
+        curl "${curl[@]}" "$url" || ec="$?"
 
-        # download database, size is zero if etag and date check triggered
-        if ec=1 && curl "${curl[@]}" "$url" && ec=0 && [[ -s "$tmp" ]]; then
-            {
-                local fields field colors name
-                local -A header
+        # size is zero if etag and date check triggered
+        if (( !ec )) && [[ -s "$tmp" ]]; then
+            local fields field fd
+            local -A header
+            exec {fd}<"$tmp"
 
-                # create a header to index mapping
-                IFS=',' read -ra fields || return 1
-                for i in "${!fields[@]}"; do
-                    header["${fields[i]}"]="$i"
-                done
+            # create a header to index mapping
+            IFS=',' read -u "$fd" -ra fields
+            for field in "${!fields[@]}"; do
+                header["${fields[field]}"]="$field"
+            done
 
-                # set the required order
-                read -ra order <<<"$order"
-                while IFS=',' read -ra fields; do
+            # set the required order and validate that all fields are there
+            read -ra order <<<"$order"
+            for field in "${order[@]}"; do
+                if [[ ! -v 'header["$field"]' ]]; then
+                    ec=1
+                    break
+                fi
+            done
+
+            if (( ! ec )); then
+                local colors name
+                while IFS=',' read -u "$fd" -ra fields; do
                     name="${fields[${header["${order[0]}"]}]}"
                     [[ -n "$name" ]] || continue
                     colors=()
@@ -123,14 +133,16 @@ _tty_theme_update() {
                         colors+=("0x${BASH_REMATCH[0]}")
                     done
                     printf '%s%s\n' "$name" "$(printf ",%06x" "${colors[@]}")"
-                done
-            } < "$tmp" > "$file"
-            touch -r "$tmp" -- "$file"
-            mv -- "$tmp.etag" "$file.etag"
-        else
-            rm -f -- "$tmp.etag"
+                done > "$file"
+                mv -- "$tmp.etag" "$file.etag"
+            fi
+
+            exec {fd}<&-
         fi
-        rm -f -- "$tmp"
+
+        # update file timestamp if successful
+        (( ec )) || touch -r "$tmp" -- "$file"
+        rm -f -- "$tmp" "$tmp.etag"
     fi
     return "$ec"
 }
