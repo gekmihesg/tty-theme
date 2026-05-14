@@ -31,8 +31,26 @@ _tty_theme() {
     _tty_theme_add_used "$theme"
 }
 
-# generate and print control sequences
+# redirect sequence to tty
 _tty_theme_apply() {
+    local tty
+    if [[ -t 1 ]]; then
+        exec {tty}>&1
+    elif [[ -t 2 ]]; then
+        exec {tty}>&2
+    elif [[ -c /dev/tty && -w /dev/tty ]]; then
+        exec {tty}>/dev/tty
+    elif tty="$(tty)" && [[ -c "$tty" && -w "$tty" ]]; then
+        exec {tty}>"$tty"
+    else
+        return 1
+    fi
+    _tty_theme_sequence "$@" >&$tty
+    exec {tty}>&-
+}
+
+# generate and print control sequences
+_tty_theme_sequence() {
     local colors=("$@")
     (( ${#colors[@]} >= 16 && ${#colors[@]} <= 19 )) || return 1
     local fg="${colors[16]:-"${colors[7]}"}"
@@ -372,7 +390,7 @@ _tty_theme_restore() {
             printf -v theme '%s/%s.theme' "$config" "$theme"
             if [[ -f "$theme" ]]; then
                 IFS=',' read -ra theme <"$theme"
-                ! _tty_theme_apply "${theme[@]:1:20}" ||
+                ! _tty_theme_apply "${theme[@]:1:19}" ||
                     export TTY_THEME="${theme[0]:-unknown}"
                 break
             fi

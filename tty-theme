@@ -31,8 +31,9 @@ cmd="${1:-}"
 case "$cmd" in
     --autoload) _TTY_THEME_LOAD_CONFIG=0 . "$lib";;
     *) TTY_THEME_AUTOLOAD=0 _TTY_THEME_LOAD_CONFIG=0 . "$lib";;&
-    --list | --preview | --restore) shift && "_tty_theme_${cmd#--}" "$@";;
-    --apply) shift && _tty_theme "$@";;
+    --*) shift;;&
+    --list | --preview | --restore) "_tty_theme_${cmd#--}" "$@";;
+    --apply) _tty_theme "$@";;
     --help) usage;;
     --*) usage 2;;
     *) _tty_theme "$@";;
