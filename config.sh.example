@@ -10,6 +10,10 @@
 # ${TERM%%-*} ($TERM up until the first -), "default" and saved to "default".
 #TTY_THEME_PROFILE=""
 
+# Number of themes to remember as recently used. Those will appear on top of the
+# list when using fzf.
+#TTY_THEME_RECENTLY_USED=20
+
 # Whether to automatically update the theme database. If set to 0, updating is
 # completely disabled. If set to 1, the update is only performed after a
 # certain time (see $TTY_THEME_UPDATE_INTERVAL). If set to 2, the update is

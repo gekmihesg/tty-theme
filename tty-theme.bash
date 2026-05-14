@@ -27,6 +27,8 @@ _tty_theme() {
         printf ',%s' "${colors[@]}"
         printf '\n'
     } > "$config/$profile.theme"
+
+    _tty_theme_add_used "$theme"
 }
 
 # generate and print control sequences
@@ -190,6 +192,51 @@ _tty_theme_list() {
     done < <(_tty_theme_data)
 }
 
+# add theme to the recently used list
+_tty_theme_add_used() {
+    local theme="$*"
+    local max_used="${TTY_THEME_RECENTLY_USED:-20}"
+    (( max_used )) || return 0
+
+    local cache="${XDG_CACHE_HOME:-"$HOME/.cache"}/tty-theme"
+    [[ -d "$cache" ]] || mkdir -p -- "$cache"
+    local file="$cache/recently-used.csv" count=1 tmp
+    tmp="$(mktemp "$file.XXXXXX")"
+
+    echo "$EPOCHSECONDS,$theme" > "$tmp"
+    if [[ -f "$file" ]]; then
+        local ts name
+        while IFS=, read -r ts name; do
+            if [[ "$name" != "$theme" ]]; then
+                printf '%s,%s\n' "$ts" "$name"
+                (( ++count < max_used )) || break
+            fi
+        done <"$file" >> "$tmp"
+    fi
+    mv -- "$tmp" "$file"
+}
+
+# list themes ordered by recently used
+_tty_theme_list_used() {
+    local max_used="${TTY_THEME_RECENTLY_USED:-20}"
+    (( max_used )) || return 0
+    local file="${XDG_CACHE_HOME:-"$HOME/.cache"}/tty-theme/recently-used.csv"
+    local theme ts
+    local -A last_used
+    if [[ -f "$file" ]]; then
+        local ts count=0
+        while (( count++ < max_used )) && IFS=, read -r ts theme; do
+            last_used["$theme"]="$ts"
+        done < "$file"
+    fi
+    while IFS='' read -r theme; do
+        printf '%d,%s\n' "${last_used["$theme"]:-0}" "$theme"
+    done < <(_tty_theme_list) | sort -t , -k 1,1nr -k 2 |
+        while IFS=',' read -r _ theme; do
+            echo "$theme"
+        done
+}
+
 # format index and colors according to pattern with the index starting at offset
 # or omitted if less than zero
 _tty_theme_format() {
@@ -346,11 +393,11 @@ _tty_theme_fzf() {
         TTY_THEME_COLOR256="${TTY_THEME_COLOR256:-}" \
         TTY_THEME_COLOR256_HARMONIOUS="${TTY_THEME_COLOR256_HARMONIOUS:-}" \
         TTY_THEME_UPDATE=0 \
-        "$fzf" --reverse \
+        "$fzf" --reverse --tiebreak=index \
             --preview="$cmd _tty_theme_preview {}" \
             --preview-window='75%,right,noinfo,<68(67%,bottom)' \
             --bind=resize:refresh-preview \
-            "${fzf_args[@]}" < <(_tty_theme_list | sort)
+            "${fzf_args[@]}" < <(_tty_theme_list_used)
 }
 
 if [[ -n "${PS1:-}" ]]; then
