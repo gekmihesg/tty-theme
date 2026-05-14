@@ -144,6 +144,8 @@ _tty_theme_update() {
             if (( ! ec )); then
                 local colors name
                 while IFS=',' read -u "$fd" -ra fields; do
+                    (( ${#fields[@]} == ${#header[@]} )) || continue
+
                     name="${fields[${header["${order[0]}"]}]}"
                     [[ -n "$name" ]] || continue
                     colors=()
