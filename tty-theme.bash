@@ -19,7 +19,8 @@ _tty_theme() {
 
     local config="${XDG_CONFIG_HOME:-"$HOME/.config"}/tty-theme"
     local profile
-    read -r profile _ <<<"${TTY_THEME_PROFILE:-default}"
+    # shellcheck disable=SC2162
+    read profile _ <<<"${TTY_THEME_PROFILE:-default}"
     mkdir -p -- "$config"
     {
         printf '%s' "$theme"
@@ -111,7 +112,8 @@ _tty_theme_update() {
             done
 
             # set the required order and validate that all fields are there
-            read -ra order <<<"$order"
+            # shellcheck disable=SC2162
+            read -a order <<<"$order"
             for field in "${order[@]}"; do
                 if [[ ! -v 'header["$field"]' ]]; then
                     ec=1
@@ -317,7 +319,8 @@ _tty_theme_restore() {
         local config="${XDG_CONFIG_HOME:-"$HOME/.config"}/tty-theme"
         local profiles="${TTY_THEME_PROFILE:-"$TERM ${TERM%%-*} default"}"
         local theme
-        read -ra profiles <<<"$profiles"
+        # shellcheck disable=SC2162
+        read -a profiles <<<"$profiles"
         for theme in "${profiles[@]}"; do
             printf -v theme '%s/%s.theme' "$config" "$theme"
             if [[ -f "$theme" ]]; then
