@@ -1,4 +1,4 @@
-#!/bin/awk -f
+#!/usr/bin/env -S awk -f
 # Translated from
 #  https://github.com/jake-stewart/color256/blob/49ffa647eb71d4510a8c2876c74cd5ae48566c9b/color256.py
 #

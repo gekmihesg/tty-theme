@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # shellcheck disable=SC1090,SC1091
 
 # load config and disable it for the library to prevent autoloading when it is

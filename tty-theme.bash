@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # apply the theme and store it for auto loading
 _tty_theme() {
