@@ -407,17 +407,26 @@ _tty_theme_fzf() {
     command -v "$fzf" >/dev/null || return 1
     local cmd
     cmd="$(printf '. %q &&' "${BASH_SOURCE[0]}")"
-    SHELL="$BASH" \
-        _TTY_THEME_LOAD_CONFIG=0 \
-        TTY_THEME_AUTOLOAD=0 \
-        TTY_THEME_COLOR256="${TTY_THEME_COLOR256:-}" \
-        TTY_THEME_COLOR256_HARMONIOUS="${TTY_THEME_COLOR256_HARMONIOUS:-}" \
-        TTY_THEME_UPDATE=0 \
-        "$fzf" --reverse --tiebreak=index \
-            --preview="$cmd _tty_theme_preview {}" \
-            --preview-window='75%,right,noinfo,<68(67%,bottom)' \
-            --bind=resize:refresh-preview \
-            "${fzf_args[@]}" < <(_tty_theme_list_used)
+    fzf_args=(
+        --reverse --tiebreak=index
+        --preview="$cmd _tty_theme_preview {}"
+        --preview-window='75%,right,noinfo,<68(67%,bottom)'
+        --bind=resize:refresh-preview
+        --bind="ctrl-r:reload($cmd TTY_THEME_UPDATE=2 _tty_theme_list_used)"
+        "${fzf_args[@]}"
+    )
+    eval "$(
+        # pass our full environment scope, cannot use env because _fzf_complete
+        # is a function
+        for var in "${!TTY_THEME_@}"; do
+            printf '%q=%q ' "$var" "${!var}"
+        done && printf ' %q' \
+            SHELL="$BASH" \
+            _TTY_THEME_LOAD_CONFIG=0 \
+            TTY_THEME_AUTOLOAD=0 \
+            TTY_THEME_UPDATE=0 \
+            "$fzf" "${fzf_args[@]}"
+    )" < <(_tty_theme_list_used)
 }
 
 if [[ -n "${PS1:-}" ]]; then
