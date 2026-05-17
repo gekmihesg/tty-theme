@@ -40,3 +40,7 @@
 
 # Whether the 256 color database should always be harmonious.
 #TTY_THEME_COLOR256_HARMONIOUS=0
+
+# Array of commands to execute after a new theme has been applied. Each command
+# gets passed the list of theme colors as argument.
+#TTY_THEME_POST=()

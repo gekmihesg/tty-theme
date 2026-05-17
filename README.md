@@ -56,6 +56,7 @@ The name of the current theme is stored in `$TTY_THEME` and the colors are in
 
 If a command or function `_tty_theme_post` is defined, it gets executed after
 applying the theme and before saving it. It gets the theme colors as parameters.
+Also `TTY_THEME_POST` can be an array of commands to execute additionally.
 
 
 [1]: https://github.com/junegunn/fzf

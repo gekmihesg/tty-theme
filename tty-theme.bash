@@ -12,10 +12,17 @@ _tty_theme() {
     _tty_theme_apply "${colors[@]}" || return 1
     export TTY_THEME="$theme"
 
-    # post function to override, gets passed theme colors as parameters
-    ! command -v _tty_theme_post >/dev/null ||
-        _tty_theme_post "${colors[@]}" ||
-        return 1
+    # user defined post function(s), gets passed theme colors as parameters
+    local post=(_tty_theme_post) cmd
+    if [[ -v TTY_THEME_POST ]]; then
+        case "${TTY_THEME_POST@a}" in
+            *[aA]*) post+=("${TTY_THEME_POST[@]}");;
+            *) post+=("$TTY_THEME_POST");;
+        esac
+    fi
+    for cmd in "${post[@]}"; do
+        ! command -v -- "$cmd" >/dev/null || "$cmd" "${colors[@]}" || return 1
+    done
 
     local config="${XDG_CONFIG_HOME:-"$HOME/.config"}/tty-theme"
     local profile
