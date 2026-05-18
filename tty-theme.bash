@@ -40,7 +40,7 @@ _tty_theme() {
 
 # redirect sequence to tty
 _tty_theme_apply() {
-    local tty
+    local tty ec=0
     if [[ -t 1 ]]; then
         exec {tty}>&1
     elif [[ -t 2 ]]; then
@@ -52,8 +52,9 @@ _tty_theme_apply() {
     else
         return 1
     fi
-    _tty_theme_sequence "$@" >&$tty
+    _tty_theme_sequence "$@" >&$tty || ec=$?
     exec {tty}>&-
+    return "$ec"
 }
 
 # generate and print control sequences
