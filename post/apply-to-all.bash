@@ -6,7 +6,10 @@ _tty_theme_post_apply_to_all() {
         seq="$(TERM=xterm _tty_theme_sequence "$@")" ||
         return 0
     for pts in /dev/pts/*; do
-        ! [[ -c "$pts" && -w "$pts" ]] || printf %s "$seq" > "$pts"
+        ! [[ -c "$pts" && -w "$pts" ]] || (
+            # this blocks sometimes, give up after one second
+            timeout 1 cat &
+        ) < <(printf %s "$seq") > "$pts" 2>&-
     done
 }
 
